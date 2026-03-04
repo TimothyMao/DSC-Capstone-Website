@@ -6,31 +6,607 @@ layout: default
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Alternative Input Interfaces for Audio Consumption</title>
+  <title>Scrolling Through Sound with Multiple User Interfaces</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:    #0f0e0c;
+      --paper:  #f5f2eb;
+      --warm:   #e8e2d4;
+      --accent: #c94f2a;
+      --muted:  #7a7366;
+      --rule:   1px solid #cec8bb;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 3rem;
+      background: rgba(245,242,235,0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: var(--rule);
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+      color: var(--ink);
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a {
+      font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); text-decoration: none; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding-top: 64px;
+    }
+    .hero-left {
+      padding: 8rem 4rem 4rem 5rem;
+      display: flex; flex-direction: column; justify-content: center;
+      border-right: var(--rule);
+    }
+    .hero-kicker {
+      font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 1.5rem;
+    }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.4rem, 4vw, 3.8rem);
+      line-height: 1.15;
+      margin-bottom: 1.8rem;
+    }
+    .hero-title em { font-style: italic; color: var(--accent); }
+    .hero-sub {
+      font-size: 1.05rem; color: var(--muted);
+      max-width: 42ch; margin-bottom: 2.5rem;
+    }
+    .hero-meta {
+      font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); border-top: var(--rule); padding-top: 1.2rem;
+    }
+    .hero-right {
+      background: var(--ink);
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 4rem;
+      position: relative; overflow: hidden;
+    }
+    .hero-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+      background: #2a2620;
+      position: absolute; inset: 0;
+      opacity: 0.5;
+    }
+    .hero-grid-cell { background: var(--ink); }
+    .hero-stat-block {
+      position: relative; z-index: 2;
+      display: flex; flex-direction: column; gap: 1.6rem;
+    }
+    .hero-stat {
+      border-left: 2px solid var(--accent);
+      padding-left: 1.2rem;
+    }
+    .hero-stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem; color: var(--paper);
+      line-height: 1;
+    }
+    .hero-stat-label {
+      font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: #8a8275; margin-top: 0.3rem;
+    }
+
+    /* ── SHARED SECTION STYLES ── */
+    section { padding: 6rem 5rem; }
+    .section-rule {
+      display: flex; align-items: center; gap: 1.2rem;
+      margin-bottom: 3rem;
+    }
+    .section-num {
+      font-family: 'Playfair Display', serif; font-style: italic;
+      font-size: 0.9rem; color: var(--accent);
+    }
+    .section-rule hr { flex: 1; border: none; border-top: var(--rule); }
+    .section-label {
+      font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--muted);
+    }
+    h2.display {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 3vw, 2.8rem);
+      line-height: 1.2; margin-bottom: 1.5rem;
+    }
+    p.lead { font-size: 1.05rem; color: var(--muted); max-width: 68ch; margin-bottom: 1.2rem; }
+    p.body-text { max-width: 68ch; margin-bottom: 1rem; color: #3a3630; }
+
+    /* ── ABOUT ── */
+    #about { background: var(--warm); border-bottom: var(--rule); }
+    .about-grid {
+      display: grid; grid-template-columns: 1.2fr 1fr; gap: 5rem; align-items: start;
+    }
+    .about-pull {
+      font-family: 'Playfair Display', serif; font-style: italic;
+      font-size: 1.5rem; line-height: 1.5;
+      border-left: 3px solid var(--accent); padding-left: 1.5rem;
+      color: var(--ink); margin-top: 2rem;
+    }
+    .team-list { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
+    .team-list li {
+      font-size: 0.85rem; padding: 0.6rem 0;
+      border-bottom: var(--rule); display: flex; justify-content: space-between;
+    }
+    .team-list .role { color: var(--muted); font-size: 0.78rem; }
+
+    /* ── INTRODUCTION ── */
+    #introduction { border-bottom: var(--rule); }
+    .intro-columns {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; margin-top: 2rem;
+    }
+    .intro-col h3 {
+      font-family: 'Playfair Display', serif; font-size: 1.1rem;
+      margin-bottom: 0.8rem; padding-bottom: 0.6rem; border-bottom: var(--rule);
+    }
+
+    /* ── METHODS ── */
+    #methods { background: var(--ink); color: var(--paper); border-bottom: none; }
+    #methods .section-rule hr { border-top-color: #3a3630; }
+    #methods .section-label { color: #6a6460; }
+    #methods h2.display { color: var(--paper); }
+    #methods p.lead { color: #9a9490; }
+
+    .features-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px;
+      background: #2a2620; margin-top: 3rem;
+    }
+    .feature-card {
+      background: var(--ink); padding: 2.5rem;
+      transition: background 0.25s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 2px; background: var(--accent);
+      transform: scaleX(0); transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+    .feature-card:hover { background: #1a1916; }
+    .feature-card:hover::before { transform: scaleX(1); }
+    .feature-num {
+      font-family: 'Playfair Display', serif; font-style: italic;
+      font-size: 2.2rem; color: #2e2c29; line-height: 1;
+      margin-bottom: 1rem;
+    }
+    .feature-card h3 {
+      font-family: 'Playfair Display', serif; font-size: 1.15rem;
+      color: var(--paper); margin-bottom: 0.8rem;
+    }
+    .feature-card p { font-size: 0.9rem; color: #8a8275; line-height: 1.65; }
+    .feature-tag {
+      display: inline-block; margin-top: 1rem;
+      font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--accent); border: 1px solid #3a2820; padding: 0.25rem 0.6rem;
+      border-radius: 2px;
+    }
+
+    /* ── RESULTS ── */
+    #results { border-bottom: var(--rule); }
+    .results-layout {
+      display: grid; grid-template-columns: 1fr 2fr; gap: 5rem; margin-top: 2rem;
+    }
+    .results-sidebar { padding-top: 0.5rem; }
+    .results-sidebar p { font-size: 0.88rem; color: var(--muted); margin-bottom: 1.5rem; }
+    .highlight-box {
+      background: var(--accent); color: white;
+      padding: 1.5rem; margin-top: 1.5rem;
+    }
+    .highlight-box p { font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.9); }
+    .highlight-box strong { display: block; font-size: 1rem; margin-bottom: 0.4rem; }
+
+    .result-items { display: flex; flex-direction: column; gap: 0; }
+    .result-item {
+      padding: 2rem 0; border-bottom: var(--rule);
+      display: grid; grid-template-columns: 2.5rem 1fr; gap: 1.5rem;
+    }
+    .result-item:first-child { border-top: var(--rule); }
+    .result-index {
+      font-family: 'Playfair Display', serif; font-style: italic;
+      font-size: 1rem; color: var(--accent); padding-top: 0.15rem;
+    }
+    .result-item h3 {
+      font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 0.6rem;
+    }
+    .result-item p { font-size: 0.9rem; color: var(--muted); }
+
+    /* ── CONCLUSION ── */
+    #conclusion { background: var(--warm); }
+    .conclusion-inner {
+      max-width: 780px; margin: 0 auto; text-align: center;
+    }
+    .conclusion-inner h2.display { margin-bottom: 1.5rem; }
+    .conclusion-inner p.lead { margin: 0 auto 1.2rem; text-align: left; }
+    .cta-row {
+      display: flex; gap: 1rem; justify-content: center; margin-top: 2.5rem;
+    }
+    .btn {
+      display: inline-block; padding: 0.75rem 1.8rem;
+      font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase;
+      text-decoration: none; transition: all 0.2s;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: #a83e1f; }
+    .btn-outline { border: 1px solid var(--ink); color: var(--ink); }
+    .btn-outline:hover { background: var(--ink); color: var(--paper); }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 2rem 5rem; border-top: var(--rule);
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.75rem; color: var(--muted);
+    }
+    footer a {
+      color: var(--muted);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      transition: color 0.2s;
+    }
+    footer a:hover { color: var(--accent); }
+
+    /* ── ANIMATIONS ── */
+    .fade-up {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      nav { padding: 1rem 1.5rem; }
+      .nav-links { gap: 1.2rem; }
+      section { padding: 4rem 1.8rem; }
+      #hero { grid-template-columns: 1fr; }
+      .hero-right { display: none; }
+      .hero-left { padding: 7rem 1.8rem 4rem; }
+      .about-grid, .intro-columns, .results-layout,
+      .features-grid { grid-template-columns: 1fr; gap: 2rem; }
+      .features-grid { background: none; gap: 1.5rem; }
+      .feature-card { border: var(--rule); }
+      footer { flex-direction: column; gap: 0.5rem; text-align: center; }
+    }
+  </style>
 </head>
 <body>
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-logo" href="#">Scrolling Through Sound</a>
+    <ul class="nav-links">
+      <li><a href="#about">About</a></li>
+      <li><a href="#introduction">Overview</a></li>
+      <li><a href="#methods">Features</a></li>
+      <li><a href="#results">Results</a></li>
+      <li><a href="#conclusion">Conclusion</a></li>
+    </ul>
+  </nav>
+
   <main>
 
+    <!-- HERO -->
+    <section id="hero">
+      <div class="hero-left fade-up">
+        <p class="hero-kicker">DSC Capstone · UCSD · Winter Quarter 2026</p>
+        <h1 class="hero-title">
+          Scrolling<br>Through <em>Sound</em><br>with Multiple User Interfaces.
+        </h1>
+        <p class="hero-sub">
+          An intelligent audio interface that adapts to how you listen —
+          using your face, hands, and touch to give you natural, precise
+          control over any podcast or audiobook.
+        </p>
+        <p class="hero-meta">Ryan Ly &nbsp;·&nbsp; Devesh Panda &nbsp;·&nbsp; Tim Mao &nbsp;·&nbsp; Wan-Rong (Emma) Leung &nbsp;·&nbsp; Edgar Cisneros &nbsp;·&nbsp; Justin Lu</p>
+      </div>
+      <div class="hero-right">
+        <div class="hero-grid">
+          <div class="hero-grid-cell"></div><div class="hero-grid-cell"></div>
+          <div class="hero-grid-cell"></div><div class="hero-grid-cell"></div>
+          <div class="hero-grid-cell"></div><div class="hero-grid-cell"></div>
+        </div>
+        <div class="hero-stat-block fade-up">
+          <div class="hero-stat">
+            <div class="hero-stat-num">5</div>
+            <div class="hero-stat-label">Distinct Input Modalities</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-num">1</div>
+            <div class="hero-stat-label">Unified Adaptive Interface</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
     <section id="about">
-      <h2>About</h2>
+      <div class="section-rule">
+        <span class="section-num">01</span>
+        <hr>
+        <span class="section-label">About the Project</span>
+      </div>
+      <div class="about-grid fade-up">
+        <div>
+          <h2 class="display">A capstone project built at UC San Diego.</h2>
+          <p class="body-text">
+            Scrolling Through Sound is a DSC Capstone project developed by a six-person team at UCSD, advised by
+            Victor Minces and Virginia De Sa. The goal: make audio as skimmable, navigable,
+            and engaging as reading.
+          </p>
+          <p class="body-text">
+            Our interface is a fully browser-based audio player that uses your camera and
+            touchscreen as expressive inputs with no special hardware or installations required.
+          </p>
+          <blockquote class="about-pull">
+            "The same intuitive seeking that able-sighted readers enjoy when parsing text — for audio."
+          </blockquote>
+        </div>
+        <div>
+          <h3 style="font-family:'Playfair Display',serif; margin-bottom:1.2rem; font-size:1rem; letter-spacing:0.04em;">The Team</h3>
+          <ul class="team-list">
+            <li><span>Ryan Ly</span><span class="role">Audio Playback, Transcription & Semantic Weighting</span></li>
+            <li><span>Devesh Panda</span><span class="role">Semantic Word Navigation & Transcription</span></li>
+            <li><span>Tim Mao</span><span class="role">Hand Gesture Navigation</span></li>
+            <li><span>Wan-Rong (Emma) Leung</span><span class="role">Facial Recognition & UI</span></li>
+            <li><span>Edgar Cisneros Barron</span><span class="role">Touch Controls & Mobile</span></li>
+            <li><span>Justin Lu</span><span class="role">YouTube Integration & Extension</span></li>
+          </ul>
+        </div>
+      </div>
     </section>
 
+    <!-- INTRODUCTION -->
     <section id="introduction">
-      <h2>Introduction</h2>
+      <div class="section-rule">
+        <span class="section-num">02</span>
+        <hr>
+        <span class="section-label">The Problem</span>
+      </div>
+      <h2 class="display fade-up">Audio is hard to navigate.<br>We set out to fix that.</h2>
+      <div class="intro-columns fade-up">
+        <div class="intro-col">
+          <h3>The Challenge</h3>
+          <p class="body-text">
+            Audiobooks and podcasts have become a primary way people consume information,
+            but the tools for navigating them haven't kept up. Unlike reading, where you can
+            skim, backtrack, or jump to a chapter in seconds, audio forces you to scrub
+            through a timeline with limited precision.
+          </p>
+          <p class="body-text">
+            Moments of confusion, distraction, or cognitive overload are common during long
+            listening sessions, and most players offer no way to detect or respond to them.
+          </p>
+        </div>
+        <div class="intro-col">
+          <h3>Our Approach</h3>
+          <p class="body-text">
+            Rather than redesigning the slider, we replaced it. Our interface uses computer
+            vision, touch, and transcription to give listeners natural, expressive control
+            over playback, responding not just to button presses, but to gestures,
+            expressions, and engagement patterns.
+          </p>
+          <p class="body-text">
+            The result is a player that adapts to you: slowing down when you look confused,
+            scrubbing intelligently when you speed up, and responding to a wave of your hand.
+          </p>
+        </div>
+      </div>
     </section>
 
+    <!-- METHODS / FEATURES -->
     <section id="methods">
-      <h2>Methods</h2>
+      <div class="section-rule">
+        <span class="section-num">03</span>
+        <hr style="border-top-color:#3a3630;">
+        <span class="section-label">Features</span>
+      </div>
+      <h2 class="display fade-up">Five ways to listen better.</h2>
+      <p class="lead fade-up">Each feature works independently or together as one unified system.</p>
+
+      <div class="features-grid fade-up">
+
+        <div class="feature-card">
+          <div class="feature-num">01</div>
+          <h3>Confusion Detection</h3>
+          <p>
+            Your camera watches for subtle facial cues — brow furrows, eye squints —
+            that signal confusion or cognitive overload. When detected, playback
+            automatically slows so you can catch up, then returns to normal speed
+            once you're back on track. No buttons needed.
+          </p>
+          <span class="feature-tag">Facial Recognition</span>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-num">02</div>
+          <h3>Hand Gesture Control</h3>
+          <p>
+            Rotate your hand clockwise to speed up, counter-clockwise to rewind.
+            Hold an open palm to pause. Complete two rotations to play. Raise a
+            finger on your other hand to adjust volume. Full hands-free control
+            over your audio — no screen touches required.
+          </p>
+          <span class="feature-tag">MediaPipe · Computer Vision</span>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-num">03</div>
+          <h3>Smart Scrub</h3>
+          <p>
+            Push past 2× speed and our interface stops blindly fast-forwarding.
+            Instead, it identifies the most important words in each segment
+            and plays only those — giving you an intelligible audio summary
+            at any speed. It's like skimming a text, but for audio.
+          </p>
+          <span class="feature-tag">Semantic NLP · Transcription</span>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-num">04</div>
+          <h3>Touch & Mobile Controls</h3>
+          <p>
+            Draw circles, tap rhythms, or swipe to control playback on any
+            touchscreen. The mobile UI is designed for single-handed use —
+            touch pad at the bottom, player info at the top, everything
+            accessible without looking away from your content.
+          </p>
+          <span class="feature-tag">Touch Gestures · Mobile UI</span>
+        </div>
+
+        <div class="feature-card" style="grid-column: span 2;">
+          <div class="feature-num">05</div>
+          <h3>YouTube Integration & Chrome Extension</h3>
+          <p>
+            Paste any YouTube link into our interface and watch it with all
+            five features active — gesture control, confusion detection,
+            smart scrubbing, and more. A Chrome Extension brings the same
+            controls directly to YouTube's native interface, so you never
+            have to leave the site you're already on.
+          </p>
+          <span class="feature-tag">YouTube · Chrome Extension · Express</span>
+        </div>
+
+      </div>
     </section>
 
+    <!-- RESULTS -->
     <section id="results">
-      <h2>Results</h2>
+      <div class="section-rule">
+        <span class="section-num">04</span>
+        <hr>
+        <span class="section-label">Results</span>
+      </div>
+      <div class="results-layout fade-up">
+        <div class="results-sidebar">
+          <h2 class="display">What we built works.</h2>
+          <p>
+            Core features — gesture control, confusion detection, touch controls, and smart scrubbing — run entirely in the browser. YouTube integration requires a local Node server.
+          </p>
+
+        </div>
+        <div class="result-items">
+          <div class="result-item">
+            <span class="result-index">i.</span>
+            <div>
+              <h3>Gesture Control Accuracy</h3>
+              <p>The rotation detection algorithm reliably distinguishes clockwise from counter-clockwise movement, and the layered smoothing filters out jitter without making the controls feel sluggish. Both Distance Mode and Speed Mode are functional and produce stable, usable playback control.</p>
+            </div>
+          </div>
+          <div class="result-item">
+            <span class="result-index">ii.</span>
+            <div>
+              <h3>Discrete Gesture Commands</h3>
+              <p>Play, pause, and volume gestures each have deliberate activation requirements — two full rotations to play, 300ms open palm to pause, secondary hand index finger for volume — that prevent accidental triggers while remaining natural to perform.</p>
+            </div>
+          </div>
+          <div class="result-item">
+            <span class="result-index">iii.</span>
+            <div>
+              <h3>Smart Scrub at High Speeds</h3>
+              <p>Above 2× speed, the system seamlessly transitions to semantic word selection. The result is an intelligible audio summary rather than distorted fast-forward audio, and it reverts cleanly to normal playback when speed drops back below the threshold.</p>
+            </div>
+          </div>
+          <div class="result-item">
+            <span class="result-index">iv.</span>
+            <div>
+              <h3>Touchscreen Controls Across Devices</h3>
+              <p>Circle, tap, and swipe gestures all map reliably to playback speed on both desktop and mobile. The mobile layout holds up in real use — single-handed operation works as intended, with the touch pad and player controls staying out of each other's way.</p>
+            </div>
+          </div>
+          <div class="result-item">
+            <span class="result-index">v.</span>
+            <div>
+              <h3>YouTube Integration</h3>
+              <p>Pasting a YouTube link into the interface successfully fetches and syncs the audio and video streams, bringing all playback features to content users already want to watch. The Chrome Extension extends this to YouTube's native interface without requiring users to leave the site.</p>
+            </div>
+          </div>
+          <div class="result-item">
+            <span class="result-index">vi.</span>
+            <div>
+              <h3>Confusion Detection Response</h3>
+              <p>The facial recognition system successfully detects brow and squint signals and maps them to adaptive playback slowdown with hysteresis to prevent jitter. The system hands off gracefully to gesture control when the user's hand enters frame.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
+    <!-- CONCLUSION -->
     <section id="conclusion">
-      <h2>Conclusion</h2>
+      <div class="section-rule">
+        <span class="section-num">05</span>
+        <hr>
+        <span class="section-label">Conclusion</span>
+      </div>
+      <div class="conclusion-inner fade-up">
+        <h2 class="display">Audio navigation that finally keeps up with how people actually listen.</h2>
+        <p class="lead">
+          Our interface demonstrates that the gap between reading and listening doesn't have to exist.
+          By combining facial recognition, hand gestures, touch controls, and semantic transcription
+          into a single unified interface, we've shown that audio can be as skimmable, navigable,
+          and engaging as text.
+        </p>
+        <p class="lead">
+          The system has clear paths forward: expanded gesture vocabularies, smarter semantic
+          summaries, and integration with platforms like Spotify and Audible. But as a proof of
+          concept, it already delivers on the core promise — a listener who is confused gets help,
+          a listener who is bored can skim intelligently, and a listener with their hands full
+          never has to touch their screen.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://github.com/victorminces/newAudioInterface/tree/Trunk" target="_blank">View on GitHub</a>
+          <a class="btn btn-outline" href="#">Read the Full Report</a>
+          <a class="btn btn-outline" href="#methods">Explore Features</a>
+        </div>
+      </div>
     </section>
 
   </main>
+
+  <footer>
+    <span>Scrolling Through Sound &nbsp;·&nbsp; DSC Capstone &nbsp;·&nbsp; UC San Diego &nbsp;·&nbsp; Winter Quarter 2026</span>
+    <span>Advised by Victor Minces &amp; Virginia De Sa &nbsp;·&nbsp; <a href="#" style="color:var(--muted); text-decoration:underline; text-underline-offset:3px; transition:color 0.2s;" onmouseover="this.style.color='#c94f2a'" onmouseout="this.style.color='#7a7366'">Read the Full Report</a></span>
+  </footer>
+
+  <script>
+    // Scroll-triggered fade-in
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+  </script>
+
 </body>
 </html>
